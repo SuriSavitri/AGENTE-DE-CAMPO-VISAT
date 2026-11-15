@@ -12,5 +12,8 @@ db.sqlite3-journal
 .venv/
 venv/
 
-# Vari·veis de ambiente
+# Variaveis de ambiente
 .env
+
+# Arquivos est√°ticos gerados pelo Django
+src/backend/staticfiles/
