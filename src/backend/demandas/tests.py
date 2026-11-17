@@ -211,6 +211,48 @@ class FluxoFiscalTests(TestCase):
         self.assertEqual(d.status, 'aberta'); self.assertEqual(d.itens_checklist.count(), 6)
 
 
+    def test_cadastro_demanda_restrito_a_gerencia(self):
+        self.client.logout()
+
+        resposta = self.client.get(reverse('criar_demanda'))
+        self.assertEqual(resposta.status_code, 302)
+
+        self.client.force_login(self.a)
+        resposta = self.client.get(reverse('criar_demanda'))
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn('/login/', resposta.url)
+
+    def test_vincular_sei_exige_gerente_e_relatorio(self):
+        url = self.url('vincular_sei')
+
+        # Fiscal não pode registrar o vínculo.
+        resposta = self.client.post(url)
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn('/login/', resposta.url)
+
+        # Gerente sem relatório não pode registrar o vínculo.
+        self.client.force_login(self.gerente)
+        resposta = self.client.post(url)
+        self.assertRedirects(resposta, self.url())
+
+        self.d.refresh_from_db()
+        self.assertFalse(self.d.relatorio_vinculado_sei)
+
+    def test_vincular_sei_registra_vinculo_conceitual(self):
+        self.d.relatorio = "Relatório técnico de teste."
+        self.d.save()
+
+        self.client.force_login(self.gerente)
+        resposta = self.client.post(self.url('vincular_sei'))
+
+        self.assertRedirects(resposta, self.url())
+
+        self.d.refresh_from_db()
+        self.assertTrue(self.d.relatorio_vinculado_sei)
+        self.assertEqual(self.d.processo_sei, 'SEI-TESTE-001')
+
+
+
 from django.test import TransactionTestCase
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
