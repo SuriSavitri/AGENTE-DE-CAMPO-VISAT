@@ -252,6 +252,37 @@ class FluxoFiscalTests(TestCase):
         self.assertEqual(self.d.processo_sei, 'SEI-TESTE-001')
 
 
+    def test_logout_bloqueia_get_sem_encerrar_sessao(self):
+        resposta = self.client.get(reverse('logout'))
+
+        self.assertEqual(resposta.status_code, 405)
+
+        # O usuário continua autenticado após a tentativa por GET.
+        resposta_inicio = self.client.get(reverse('inicio'))
+        self.assertEqual(resposta_inicio.status_code, 200)
+
+    def test_logout_post_encerra_sessao(self):
+        resposta = self.client.post(reverse('logout'))
+
+        self.assertRedirects(resposta, reverse('login'))
+
+        # Após o logout, o usuário não consegue acessar área restrita.
+        resposta_inicio = self.client.get(reverse('inicio'))
+        self.assertEqual(resposta_inicio.status_code, 302)
+        self.assertIn(reverse('login'), resposta_inicio.url)
+
+    def test_logout_post_sem_csrf_e_bloqueado(self):
+        cliente_seguro = Client(enforce_csrf_checks=True)
+        cliente_seguro.force_login(self.a)
+
+        resposta = cliente_seguro.post(reverse('logout'))
+
+        self.assertEqual(resposta.status_code, 403)
+
+        # A sessão continua ativa porque o POST foi rejeitado.
+        resposta_inicio = cliente_seguro.get(reverse('inicio'))
+        self.assertEqual(resposta_inicio.status_code, 200)
+
 
 from django.test import TransactionTestCase
 from django.db import connection
