@@ -6,6 +6,7 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("sair/", views.logout_view, name="logout"),
     path("demanda/nova/", views.criar_demanda, name="criar_demanda"),
+    path("demanda/<int:numero>/atribuir-fiscal/", views.atribuir_fiscal, name="atribuir_fiscal"),
     path("demanda/<int:numero>/", views.detalhe_demanda, name="detalhe_demanda"),
     path("demanda/<int:numero>/localizacao/", views.editar_localizacao, name="editar_localizacao"),
     path("demanda/<int:numero>/iniciar/", views.iniciar_demanda, name="iniciar_demanda"),

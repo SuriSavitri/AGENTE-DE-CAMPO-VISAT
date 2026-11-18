@@ -67,3 +67,17 @@ class EvidenciaForm(forms.ModelForm):
         model = Evidencia
         fields = ["tipo", "descricao"]
         widgets = {"descricao": forms.Textarea(attrs={"rows": 4, "placeholder": "Descreva o registro realizado em campo"})}
+
+
+class AtribuirFiscalForm(forms.ModelForm):
+    class Meta:
+        model = Demanda
+        fields = ["fiscal"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["fiscal"].required = True
+        self.fields["fiscal"].queryset = User.objects.filter(
+            is_active=True, is_staff=False, is_superuser=False
+        ).exclude(groups__name="Gerencia").distinct()
+        self.fields["fiscal"].label = "Selecione o fiscal"

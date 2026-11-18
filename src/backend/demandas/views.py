@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
-from .forms import DemandaForm, LocalizacaoForm, RespostasChecklistForm, EvidenciaForm
+from .forms import DemandaForm, LocalizacaoForm, RespostasChecklistForm, EvidenciaForm, AtribuirFiscalForm
 from .constants import ITENS_PADRAO
 from .models import Demanda, ItemChecklist
 
@@ -116,9 +116,29 @@ def criar_demanda(request):
 
 
 @login_required
+@user_passes_test(eh_gerente)
+@require_POST
+def atribuir_fiscal(request, numero):
+    demanda = get_object_or_404(Demanda, numero=numero)
+    if demanda.fiscal_id:
+        messages.error(request, "Esta demanda já tem um fiscal responsável.")
+        return redirect("detalhe_demanda", numero=demanda.numero)
+
+    form = AtribuirFiscalForm(request.POST, instance=demanda)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Fiscal atribuído com sucesso.")
+    else:
+        messages.error(request, "Selecione um fiscal válido para atribuir à demanda.")
+    return redirect("detalhe_demanda", numero=demanda.numero)
+
+
+@login_required
 def detalhe_demanda(request, numero):
     demanda = get_object_or_404(demandas_visiveis(request.user), numero=numero)
     contexto = {"demanda": demanda, "gerente": eh_gerente(request.user)}
+    if contexto["gerente"] and not demanda.fiscal_id:
+        contexto["atribuicao_form"] = AtribuirFiscalForm(instance=demanda)
     endereco = f"{demanda.endereco}, {demanda.bairro}, Recife, PE"
     contexto["busca_mapa"] = "https://www.google.com/maps/search/?" + urlencode({"api": "1", "query": endereco})
     if demanda.tem_coordenadas:
